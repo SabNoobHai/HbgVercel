@@ -45,14 +45,14 @@ export default function Homepage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await axios.get('http://localhost:5000/auth/facebook/pages', { withCredentials: true });
+        await axios.get('https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages', { withCredentials: true });
         dispatch(setFbToken(true));
       } catch {
         dispatch(setFbToken(false));
       }
 
       try {
-        await axios.get('http://localhost:5000/api/youtube/check-auth', { withCredentials: true });
+        await axios.get('https://socialsuit-backend-h9md.onrender.com//api/youtube/check-auth', { withCredentials: true });
         dispatch(setGoogleToken(true));
       } catch {
         dispatch(setGoogleToken(false));
@@ -61,7 +61,7 @@ export default function Homepage() {
 
     const fetchPages = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/auth/facebook/pages', { withCredentials: true });
+        const res = await axios.get('https://socialsuit-backend-h9md.onrender.com//auth/facebook/pages', { withCredentials: true });
         dispatch(setPages(res.data.pages));
       } catch (err) {
         console.error('Error fetching pages:', err);
@@ -79,7 +79,7 @@ export default function Homepage() {
       if (!page) return;
 
       try {
-        const res = await axios.get('http://localhost:5000/posts/getallpostsfilter', {
+        const res = await axios.get('https://socialsuit-backend-h9md.onrender.com//posts/getallpostsfilter', {
           params: { pageId: selectedPage, accessToken: page.access_token, sortBy, order },
           withCredentials: true,
         });
