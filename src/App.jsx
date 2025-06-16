@@ -1,3 +1,5 @@
+import axios from 'axios';
+axios.defaults.withCredentials = true;
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './components/Home';
 
@@ -6,7 +8,7 @@ import { Provider } from 'react-redux';
 import Homepage from './components/Homepage';
 import Schedule from './components/Schedule';
 import Login from './components/Login_page';
-import axios from 'axios';
+
 import YouTubeDashboard from './components/YouTubeDashboard'; 
 import UploadForm from './components/UploadForm';
 import Analytics from './components/Analytics';
