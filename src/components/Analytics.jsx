@@ -12,7 +12,7 @@ function Analytics() {
   useEffect(() => {
     const fetchPages = async () => {
       try {
-        const res = await axios.get("https://socialsuit-backend-h9md.onrender.com//auth/facebook/pages", {
+        const res = await axios.get("https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages", {
           withCredentials: true,
         });
         const pageList = res.data.pages || [];
@@ -32,7 +32,7 @@ function Analytics() {
     if (!selectedPage) return;
     setLoading(true);
     axios
-      .get("https://socialsuit-backend-h9md.onrender.com//insights/page", {
+      .get("https://socialsuit-backend-h9md.onrender.com/insights/page", {
         params: {
           pageId: selectedPage,
           metrics: "page_impressions_unique,page_post_engagements,page_follows",
