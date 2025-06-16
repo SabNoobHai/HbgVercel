@@ -42,17 +42,33 @@ export default function Homepage() {
   const fbTokenValid = useSelector((state) => state.pages.fbTokenValid);
   const googleTokenValid = useSelector((state) => state.pages.googleTokenValid);
 
+  // Get user_id from localStorage
+  const userId = (() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      return user && user._id ? user._id : '';
+    } catch {
+      return '';
+    }
+  })();
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await axios.get('https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages', { withCredentials: true });
+        await axios.get(
+          'https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages',
+          { params: { user_id: userId } }
+        );
         dispatch(setFbToken(true));
       } catch {
         dispatch(setFbToken(false));
       }
 
       try {
-        await axios.get('https://socialsuit-backend-h9md.onrender.com/api/youtube/check-auth', { withCredentials: true });
+        await axios.get(
+          'https://socialsuit-backend-h9md.onrender.com/api/youtube/check-auth',
+          { withCredentials: true }
+        );
         dispatch(setGoogleToken(true));
       } catch {
         dispatch(setGoogleToken(false));
@@ -61,16 +77,21 @@ export default function Homepage() {
 
     const fetchPages = async () => {
       try {
-        const res = await axios.get('https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages', { withCredentials: true });
+        const res = await axios.get(
+          'https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages',
+          { params: { user_id: userId } }
+        );
         dispatch(setPages(res.data.pages));
       } catch (err) {
         console.error('Error fetching pages:', err);
       }
     };
 
-    checkAuth();
-    fetchPages();
-  }, []);
+    if (userId) {
+      checkAuth();
+      fetchPages();
+    }
+  }, [userId, dispatch]);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -79,10 +100,18 @@ export default function Homepage() {
       if (!page) return;
 
       try {
-        const res = await axios.get('https://socialsuit-backend-h9md.onrender.com/posts/getallpostsfilter', {
-          params: { pageId: selectedPage, accessToken: page.access_token, sortBy, order },
-          withCredentials: true,
-        });
+        const res = await axios.get(
+          'https://socialsuit-backend-h9md.onrender.com/posts/getallpostsfilter',
+          {
+            params: {
+              user_id: userId,
+              pageId: selectedPage,
+              accessToken: page.access_token,
+              sortBy,
+              order,
+            },
+          }
+        );
         setPosts(res.data);
       } catch (err) {
         console.error('Error fetching posts:', err);
@@ -90,8 +119,8 @@ export default function Homepage() {
       }
     };
 
-    fetchPosts();
-  }, [selectedPage, sortBy, order]);
+    if (userId) fetchPosts();
+  }, [selectedPage, sortBy, order, pages, userId]);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -108,7 +137,7 @@ export default function Homepage() {
         <button onClick={() => setActiveSection('fbposts')} className="flex items-center gap-3 text-white hover:text-purple-400">
           <Facebook /> Facebook Posts
         </button>
-          <button onClick={() => setActiveSection('youtube')} className="flex items-center gap-3 text-white hover:text-purple-400">
+        <button onClick={() => setActiveSection('youtube')} className="flex items-center gap-3 text-white hover:text-purple-400">
           <Youtube /> Youtube
         </button>
         <button onClick={() => setActiveSection('schedule')} className="flex items-center gap-3 text-white hover:text-purple-400">
@@ -129,7 +158,6 @@ export default function Homepage() {
         <button onClick={handleLogout} className="flex items-center gap-3 text-red-500 hover:text-red-400">
           <LogOut /> Logout
         </button>
-       
       </nav>
     </div>
   );
@@ -181,22 +209,20 @@ export default function Homepage() {
               ) : <FacebookLoginButton />}
             </section>
 
-           <div
-            id="homepage"
-            className="h-[350px] bg-[#1f1f1f]/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl p-8 flex flex-col justify-between hover:scale-[1.02] transition-transform duration-300"
-          >
-            {/* <h2 className="text-2xl font-semibold text-white">Youtube</h2> */}
-            <div className="flex flex-1 items-center justify-center h-full">
-              {!googleTokenValid ? (
-                <div className="w-full max-w-xs">
-                  <GoogleLoginButton />
-                </div>
-              ) : (
-                <YouTubePosts />
-              )}
+            <div
+              id="homepage"
+              className="h-[350px] bg-[#1f1f1f]/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl p-8 flex flex-col justify-between hover:scale-[1.02] transition-transform duration-300"
+            >
+              <div className="flex flex-1 items-center justify-center h-full">
+                {!googleTokenValid ? (
+                  <div className="w-full max-w-xs">
+                    <GoogleLoginButton />
+                  </div>
+                ) : (
+                  <YouTubePosts />
+                )}
+              </div>
             </div>
-          </div>
-
           </>
         );
       case 'fbposts':
@@ -211,55 +237,53 @@ export default function Homepage() {
             ) : <FacebookLoginButton />}
           </section>
         );
-        case 'schedule':
-    return (
-      <section className="bg-gray-900 text-white shadow rounded-xl p-6">
-        <h2 className="text-xl font-semibold mb-4">Schedule Post</h2>
-        {fbTokenValid ? (
-          <>
-            {renderPageFilters()}
-            <SchPost />
-          </>
-        ) : <FacebookLoginButton />}
-      </section>
-    );
-
-  case 'analytics':
-    return (
-      <section className="bg-gray-900 text-white shadow rounded-xl p-6">
-        <h2 className="text-xl font-semibold mb-4">Analytics</h2>
-        {fbTokenValid ? (
-          <>
-            {renderPageFilters()}
-            <Analytics />
-          </>
-        ) : <FacebookLoginButton />}
-      </section>
-    );
-    case 'youtube':
-    return (
-      <section className="bg-gray-900 text-white shadow rounded-xl p-6">
-        <h2 className="text-xl font-semibold mb-4">Youtube</h2>
-        {googleTokenValid ? (
-          <>
-            {renderPageFilters()}
-            <YouTubeDashboard />
-          </>
-        ) : <GoogleLoginButton />}
-      </section>
-    );
-     case 'yts':
-    return (
-      <section className="bg-gray-900 text-white shadow rounded-xl p-6">
-        {/* <h2 className="text-xl font-semibold mb-4">Youtube</h2> */}
-        {googleTokenValid ? (
-          <>
-            {renderPageFilters()}
-            <UploadForm />
-          </>
-        ) : <GoogleLoginButton />}
-      </section>
-    );
+      case 'schedule':
+        return (
+          <section className="bg-gray-900 text-white shadow rounded-xl p-6">
+            <h2 className="text-xl font-semibold mb-4">Schedule Post</h2>
+            {fbTokenValid ? (
+              <>
+                {renderPageFilters()}
+                <SchPost />
+              </>
+            ) : <FacebookLoginButton />}
+          </section>
+        );
+      case 'analytics':
+        return (
+          <section className="bg-gray-900 text-white shadow rounded-xl p-6">
+            <h2 className="text-xl font-semibold mb-4">Analytics</h2>
+            {fbTokenValid ? (
+              <>
+                {renderPageFilters()}
+                <Analytics />
+              </>
+            ) : <FacebookLoginButton />}
+          </section>
+        );
+      case 'youtube':
+        return (
+          <section className="bg-gray-900 text-white shadow rounded-xl p-6">
+            <h2 className="text-xl font-semibold mb-4">Youtube</h2>
+            {googleTokenValid ? (
+              <>
+                {renderPageFilters()}
+                <YouTubeDashboard />
+              </>
+            ) : <GoogleLoginButton />}
+          </section>
+        );
+      case 'yts':
+        return (
+          <section className="bg-gray-900 text-white shadow rounded-xl p-6">
+            {googleTokenValid ? (
+              <>
+                {renderPageFilters()}
+                <UploadForm />
+              </>
+            ) : <GoogleLoginButton />}
+          </section>
+        );
       default:
         return (
           <section className="bg-gray-900 text-gray-400 shadow rounded-xl p-6 text-center">
