@@ -1,4 +1,3 @@
-// src/components/Analytics.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -9,12 +8,25 @@ function Analytics() {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Get user_id from localStorage
+  const userId = (() => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      return user && user._id ? user._id : "";
+    } catch {
+      return "";
+    }
+  })();
+
   useEffect(() => {
     const fetchPages = async () => {
       try {
-        const res = await axios.get("https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages", {
-          withCredentials: true,
-        });
+        const res = await axios.get(
+          "https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages",
+          {
+            params: { user_id: userId },
+          }
+        );
         const pageList = res.data.pages || [];
         setPages(pageList);
         if (pageList.length > 0) {
@@ -25,20 +37,20 @@ function Analytics() {
         setPages([]);
       }
     };
-    fetchPages();
-  }, []);
+    if (userId) fetchPages();
+  }, [userId]);
 
   useEffect(() => {
-    if (!selectedPage) return;
+    if (!selectedPage || !userId) return;
     setLoading(true);
     axios
       .get("https://socialsuit-backend-h9md.onrender.com/insights/page", {
         params: {
+          user_id: userId,
           pageId: selectedPage,
           metrics: "page_impressions_unique,page_post_engagements,page_follows",
           period,
         },
-        withCredentials: true,
       })
       .then((res) => {
         setAnalytics(res.data);
@@ -49,7 +61,7 @@ function Analytics() {
         setAnalytics(null);
         setLoading(false);
       });
-  }, [selectedPage, period]);
+  }, [selectedPage, period, userId]);
 
   let growth = [];
   let maxValue = 1;
