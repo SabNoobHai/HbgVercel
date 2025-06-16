@@ -9,7 +9,7 @@ function YouTubePosts() {
 
   const handleGoogleLogin = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/youtube/auth-url', { withCredentials: true });
+      const res = await axios.get('https://socialsuit-backend-h9md.onrender.com/api/youtube/auth-url', { withCredentials: true });
       if (res.data.url) {
         window.location.href = res.data.url;
       }
@@ -21,7 +21,7 @@ function YouTubePosts() {
   useEffect(() => {
     const checkGoogleAuth = async () => {
       try {
-        await axios.get('http://localhost:5000/api/youtube/check-auth', { withCredentials: true });
+        await axios.get('https://socialsuit-backend-h9md.onrender.com/api/youtube/check-auth', { withCredentials: true });
         setGoogleTokenValid(true);
       } catch {
         setGoogleTokenValid(false);
@@ -33,7 +33,7 @@ function YouTubePosts() {
   const fetchVideos = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/youtube/uploads', { withCredentials: true });
+      const res = await axios.get('https://socialsuit-backend-h9md.onrender.com/api/youtube/uploads', { withCredentials: true });
       setVideos(res.data || []);
     } catch (err) {
       setVideos([]);
