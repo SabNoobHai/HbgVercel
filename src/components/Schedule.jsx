@@ -84,7 +84,9 @@ const SchPost = () => {
     formData.append('pageId', selectedPage);
     formData.append('message', message);
     formData.append('scheduledTime', timestamp);
+    // Add this
     formData.append('mediaType', mediaType);
+     console.log("MediaFile:", mediaFile);
     formData.append('file', mediaFile);
 
     try {
@@ -107,6 +109,7 @@ const SchPost = () => {
     formData.append('pageId', selectedPage);
     formData.append('message', message);
     formData.append('mediaType', mediaType);
+     console.log("MediaFile:", mediaFile);
     formData.append('file', mediaFile);
 
     try {
