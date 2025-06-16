@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { setPages, setUser } from '../store/pagesSlice';
+import { setPages, setUser, setFbToken } from '../store/pagesSlice';
 import { FaFacebook, FaRegClock, FaPaperPlane } from 'react-icons/fa';
 
 const SchPost = () => {
   const dispatch = useDispatch();
   const pages = useSelector((state) => state.pages.pages);
   const user = useSelector((state) => state.pages.user);
+  const fbTokenValid = useSelector((state) => state.pages.fbTokenValid);
 
   const [selectedPage, setSelectedPage] = useState('');
   const [message, setMessage] = useState('');
@@ -31,9 +32,25 @@ const SchPost = () => {
     if (storedUser) {
       dispatch(setUser(JSON.parse(storedUser)));
     }
+    checkFbAuth();
     fetchPages();
     // eslint-disable-next-line
   }, [dispatch]);
+
+  const checkFbAuth = async () => {
+    if (!userId) {
+      dispatch(setFbToken(false));
+      return;
+    }
+    try {
+      await axios.get('https://socialsuit-backend-h9md.onrender.com/auth/facebook/status', {
+        params: { user_id: userId },
+      });
+      dispatch(setFbToken(true));
+    } catch {
+      dispatch(setFbToken(false));
+    }
+  };
 
   const handleFacebookLogin = () => {
     if (!userId) {
@@ -44,6 +61,7 @@ const SchPost = () => {
   };
 
   const fetchPages = async () => {
+    if (!userId) return;
     try {
       const res = await axios.get('https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages', {
         params: { user_id: userId },
@@ -111,7 +129,7 @@ const SchPost = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#23272f' }}>
-      {pages.length === 0 ? (
+      {!fbTokenValid ? (
         <button
           onClick={handleFacebookLogin}
           className="px-8 py-4 bg-blue-700 text-white rounded-xl font-bold text-lg shadow-lg flex items-center gap-2 hover:bg-blue-800 transition"
