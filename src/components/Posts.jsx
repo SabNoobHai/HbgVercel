@@ -15,10 +15,20 @@ function Posts() {
   const pages = useSelector((state) => state.pages.pages);
   const selectedPage = useSelector((state) => state.pages.selectedPage);
 
+  // Get user_id from localStorage
+  const userId = (() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      return user && user._id ? user._id : '';
+    } catch {
+      return '';
+    }
+  })();
+
   const fetchPages = async () => {
     try {
       const res = await axios.get('https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages', {
-        withCredentials: true,
+        params: { user_id: userId },
       });
       dispatch(setPages(res.data.pages));
     } catch (err) {
@@ -34,12 +44,12 @@ function Posts() {
     try {
       const res = await axios.get('https://socialsuit-backend-h9md.onrender.com/posts/getallpostsfilter', {
         params: {
+          user_id: userId,
           pageId: selectedPage,
           accessToken: page.access_token,
           sortBy,
           order,
         },
-        withCredentials: true,
       });
       setPosts(res.data);
     } catch (err) {
@@ -48,59 +58,62 @@ function Posts() {
     }
   };
 
- const handleEditPost = async () => {
-  try {
-    const res = await axios.post('https://socialsuit-backend-h9md.onrender.com/editpost', {
-      postId: selectedPost.postId || selectedPost.id,
-      pageId: selectedPage,
-      message: editedMessage,
-    });
-    if (res.data.success) {
-      alert('Post updated successfully!');
-      setEditMode(false);
-      setSelectedPost(null);
-      fetchPosts();
-    } else {
-      alert('Failed to update post');
-    }
-  } catch (error) {
-    console.error(error);
-    alert('Error updating post');
-  }
-};
-
-const handleDeletePost = async () => {
-  if (!window.confirm('Are you sure you want to delete this post?')) return;
-  try {
-    const res = await axios.delete('https://socialsuit-backend-h9md.onrender.com/deletepost', {
-      data: {
+  const handleEditPost = async () => {
+    try {
+      const res = await axios.post('https://socialsuit-backend-h9md.onrender.com/editpost', {
+        user_id: userId,
         postId: selectedPost.postId || selectedPost.id,
         pageId: selectedPage,
-      },
-    });
-    if (res.data.success) {
-      alert('Post deleted successfully!');
-      setSelectedPost(null);
-      fetchPosts();
-    } else {
-      alert('Failed to delete post');
+        message: editedMessage,
+      });
+      if (res.data.success) {
+        alert('Post updated successfully!');
+        setEditMode(false);
+        setSelectedPost(null);
+        fetchPosts();
+      } else {
+        alert('Failed to update post');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error updating post');
     }
-  } catch (error) {
-    console.error(error);
-    alert('Error deleting post');
-  }
-};
+  };
 
+  const handleDeletePost = async () => {
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
+    try {
+      const res = await axios.delete('https://socialsuit-backend-h9md.onrender.com/deletepost', {
+        data: {
+          user_id: userId,
+          postId: selectedPost.postId || selectedPost.id,
+          pageId: selectedPage,
+        },
+      });
+      if (res.data.success) {
+        alert('Post deleted successfully!');
+        setSelectedPost(null);
+        fetchPosts();
+      } else {
+        alert('Failed to delete post');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error deleting post');
+    }
+  };
 
   useEffect(() => {
-    fetchPages();
-  }, []);
+    if (userId) fetchPages();
+    // eslint-disable-next-line
+  }, [userId]);
 
   useEffect(() => {
-    if (selectedPage) {
+    if (selectedPage && userId) {
       fetchPosts();
     }
-  }, [selectedPage, sortBy, order]);
+    // eslint-disable-next-line
+  }, [selectedPage, sortBy, order, userId]);
 
   return (
     <>
