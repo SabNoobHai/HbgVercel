@@ -15,26 +15,38 @@ const SchPost = () => {
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaType, setMediaType] = useState('photo');
 
+  // Get user_id from localStorage
+  const userId = (() => {
+    try {
+      const stored = localStorage.getItem('user');
+      const parsed = stored ? JSON.parse(stored) : null;
+      return parsed && parsed._id ? parsed._id : '';
+    } catch {
+      return '';
+    }
+  })();
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       dispatch(setUser(JSON.parse(storedUser)));
     }
     fetchPages();
+    // eslint-disable-next-line
   }, [dispatch]);
 
   const handleFacebookLogin = () => {
-    if (!user || !user._id) {
+    if (!userId) {
       alert('Please login first.');
       return;
     }
-    window.location.href = `https://socialsuit-backend-h9md.onrender.com/auth/facebook?user_id=${user._id}`;
+    window.location.href = `https://socialsuit-backend-h9md.onrender.com/auth/facebook?user_id=${userId}`;
   };
 
   const fetchPages = async () => {
     try {
       const res = await axios.get('https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages', {
-        withCredentials: true,
+        params: { user_id: userId },
       });
       dispatch(setPages(res.data.pages || []));
     } catch (err) {
@@ -50,6 +62,7 @@ const SchPost = () => {
 
     const timestamp = Math.floor(new Date(scheduledTime).getTime() / 1000);
     const formData = new FormData();
+    formData.append('user_id', userId);
     formData.append('pageId', selectedPage);
     formData.append('message', message);
     formData.append('scheduledTime', timestamp);
@@ -59,7 +72,6 @@ const SchPost = () => {
     try {
       const res = await axios.post('https://socialsuit-backend-h9md.onrender.com/schedulePost/timing', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        withCredentials: true,
       });
       alert('Scheduled Post ID: ' + res.data.postId);
       resetForm();
@@ -73,6 +85,7 @@ const SchPost = () => {
     if (!selectedPage) return alert('Select a valid page.');
 
     const formData = new FormData();
+    formData.append('user_id', userId);
     formData.append('pageId', selectedPage);
     formData.append('message', message);
     formData.append('mediaType', mediaType);
@@ -81,7 +94,6 @@ const SchPost = () => {
     try {
       const res = await axios.post('https://socialsuit-backend-h9md.onrender.com/schedulePost/instantly', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        withCredentials: true,
       });
       alert('Post ID: ' + res.data.postId);
       resetForm();
@@ -154,7 +166,7 @@ const SchPost = () => {
             <label className="block mb-1 text-sm font-semibold text-blue-200">Upload Media</label>
             <input
               type="file"
-              accept={mediaType === 'photo' ? 'image/' : 'video/'}
+              accept={mediaType === 'photo' ? 'image/*' : 'video/*'}
               onChange={e => setMediaFile(e.target.files[0])}
               className="w-full mb-2 border border-blue-700 rounded-lg p-2 bg-[#101522] text-white focus:ring-2 focus:ring-blue-400"
             />
