@@ -17,7 +17,7 @@ function Posts() {
 
   const fetchPages = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/auth/facebook/pages', {
+      const res = await axios.get('https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages', {
         withCredentials: true,
       });
       dispatch(setPages(res.data.pages));
@@ -32,7 +32,7 @@ function Posts() {
     const page = pages.find((p) => p.id === selectedPage);
     if (!page) return;
     try {
-      const res = await axios.get('http://localhost:5000/posts/getallpostsfilter', {
+      const res = await axios.get('https://socialsuit-backend-h9md.onrender.com/posts/getallpostsfilter', {
         params: {
           pageId: selectedPage,
           accessToken: page.access_token,
@@ -50,7 +50,7 @@ function Posts() {
 
  const handleEditPost = async () => {
   try {
-    const res = await axios.post('http://localhost:5000/editpost', {
+    const res = await axios.post('https://socialsuit-backend-h9md.onrender.com/editpost', {
       postId: selectedPost.postId || selectedPost.id,
       pageId: selectedPage,
       message: editedMessage,
@@ -72,7 +72,7 @@ function Posts() {
 const handleDeletePost = async () => {
   if (!window.confirm('Are you sure you want to delete this post?')) return;
   try {
-    const res = await axios.delete('http://localhost:5000/deletepost', {
+    const res = await axios.delete('https://socialsuit-backend-h9md.onrender.com/deletepost', {
       data: {
         postId: selectedPost.postId || selectedPost.id,
         pageId: selectedPage,
