@@ -8,73 +8,60 @@ function Analytics() {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Get user_id from localStorage
-  const userId = (() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      return user && user._id ? user._id : "";
-    } catch {
-      return "";
-    }
-  })();
-
+  // Fetch pages for dropdown
   useEffect(() => {
     const fetchPages = async () => {
       try {
-        const res = await axios.get(
-          "https://socialsuit-backend-h9md.onrender.com/auth/facebook/pages",
-          {
-            params: { user_id: userId },
-          }
-        );
-        const pageList = res.data.pages || [];
-        setPages(pageList);
-        if (pageList.length > 0) {
-          setSelectedPage(pageList[0].id || pageList[0].pageId);
+        const res = await axios.get("http://localhost:5000/auth/facebook/pages", { withCredentials: true });
+        setPages(res.data.pages || []);
+        if (res.data.pages && res.data.pages.length > 0) {
+          setSelectedPage(res.data.pages[0].id || res.data.pages[0].pageId);
         }
-      } catch (err) {
-        console.error("Failed to fetch pages", err);
+      } catch {
         setPages([]);
       }
     };
-    if (userId) fetchPages();
-  }, [userId]);
+    fetchPages();
+  }, []);
 
+  // Fetch analytics data
   useEffect(() => {
-    if (!selectedPage || !userId) return;
+    if (!selectedPage) return;
     setLoading(true);
     axios
-      .get("https://socialsuit-backend-h9md.onrender.com/insights/page", {
-        params: {
-          user_id: userId,
-          pageId: selectedPage,
-          metrics: "page_impressions_unique,page_post_engagements,page_follows",
-          period,
-        },
+      .get("http://localhost:5000/insights/page", {
+        params: { pageId: selectedPage, metrics: "page_impressions_unique,page_post_engagements,page_follows", period },
+        withCredentials: true,
       })
       .then((res) => {
         setAnalytics(res.data);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error("Failed to fetch analytics", err);
+      .catch(() => {
         setAnalytics(null);
         setLoading(false);
       });
-  }, [selectedPage, period, userId]);
+  }, [selectedPage, period]);
 
+  // Prepare simple bar graph data (no external chart library)
   let growth = [];
   let maxValue = 1;
-  if (analytics?.data) {
+  if (analytics && analytics.data) {
     growth = analytics.data.map((metric) => ({
       label: metric.title || metric.name,
-      value: metric.values?.[0]?.value || 0,
+      value: metric.values && metric.values.length > 0 ? metric.values[0].value : 0,
     }));
     maxValue = Math.max(...growth.map((item) => item.value), 1);
   }
 
+  // Use the same purple as Socialsuite heading: #a78bfa (Tailwind's purple-400)
+  const purple = "#a78bfa";
+
   return (
-    <div className="min-h-screen w-full flex flex-col items-center pt-16" style={{ background: "#23272f" }}>
+    <div
+      className="min-h-screen w-full flex flex-col items-center pt-16"
+      style={{ background: "#23272f" }}
+    >
       <style>{`
         .analytics-container {
           background: #23283a;
@@ -86,13 +73,13 @@ function Analytics() {
           max-width: 900px;
         }
         .analytics-label {
-          color: #2563eb;
+          color: ${purple};
           font-weight: 600;
         }
         .analytics-select {
           background: #181c24;
           color: #fff;
-          border: 1px solid #2563eb;
+          border: 1px solid ${purple};
           border-radius: 8px;
           padding: 0.5rem 1rem;
           margin-right: 0.5rem;
@@ -105,16 +92,23 @@ function Analytics() {
           min-width: 150px;
           flex: 1;
           box-shadow: 0 2px 8px #0002;
-          border-left: 4px solid #2563eb;
+          border-left: 4px solid ${purple};
         }
         .analytics-bar {
-          background: linear-gradient(180deg, #2563eb 60%, #1e293b 100%);
+          background: linear-gradient(180deg, ${purple} 60%, #1e293b 100%);
         }
         .analytics-bar-label {
-          color: #2563eb;
+          color: ${purple};
+          font-size: 1.1rem; /* Decreased font size */
+          font-weight: 700;
+        }
+        .analytics-bar-value {
+          color: #fff;
+          font-size: 1.2rem; /* Decreased font size */
+          font-weight: 700;
+          margin-bottom: 6px;
         }
       `}</style>
-
       <div className="analytics-container">
         <div className="flex flex-wrap gap-6 mb-8 justify-between items-center">
           <div>
@@ -122,9 +116,9 @@ function Analytics() {
             <select
               className="analytics-select"
               value={selectedPage}
-              onChange={(e) => setSelectedPage(e.target.value)}
+              onChange={e => setSelectedPage(e.target.value)}
             >
-              {pages.map((page) => (
+              {pages.map(page => (
                 <option key={page.id || page.pageId} value={page.id || page.pageId}>
                   {page.name}
                 </option>
@@ -136,7 +130,7 @@ function Analytics() {
             <select
               className="analytics-select"
               value={period}
-              onChange={(e) => setPeriod(e.target.value)}
+              onChange={e => setPeriod(e.target.value)}
             >
               <option value="day">Daily</option>
               <option value="week">Weekly</option>
@@ -146,49 +140,48 @@ function Analytics() {
         </div>
 
         {loading ? (
-          <div className="text-blue-400 text-center py-10">Loading analytics...</div>
+          <div className="text-center py-10" style={{ color: purple }}>Loading analytics...</div>
         ) : analytics && growth.length > 0 ? (
           <div>
             <div className="mb-8">
-              <h3 className="text-2xl font-bold text-[#2563eb] mb-4">Overview</h3>
+              <h3 className="text-2xl font-bold mb-4" style={{ color: purple }}>Overview</h3>
               <div className="flex flex-wrap gap-8">
-                {growth.map((item) => (
-                  <div key={item.label} className="analytics-overview-card">
-                    <div className="text-sm text-blue-300">{item.label}</div>
+                {growth.map((item, idx) => (
+                  <div key={idx} className="analytics-overview-card">
+                    <div className="text-sm" style={{ color: "#c4b5fd" }}>{item.label}</div>
                     <div className="text-2xl font-bold">{item.value}</div>
                   </div>
                 ))}
               </div>
             </div>
-
+            {/* Simple Bar Graph */}
             <div className="bg-[#181c24] rounded-lg p-6 mt-6">
-              <h4 className="text-lg font-semibold text-[#2563eb] mb-4">Growth Chart</h4>
+              <h4 className="text-lg font-semibold mb-4" style={{ color: purple }}>Growth Chart</h4>
               <div className="flex items-end h-40 w-full gap-4">
-                {growth.map((item) => {
-                  const barHeight = Math.max((item.value / maxValue) * 120 + 10, 10);
-                  return (
-                    <div key={item.label} className="flex flex-col items-center flex-1">
-                      <div
-                        className="analytics-bar rounded-t w-8"
-                        style={{
-                          height: `${barHeight}px`,
-                          transition: "height 0.3s",
-                        }}
-                        title={item.value}
-                      ></div>
-                      <span className="text-xs analytics-bar-label mt-2">{item.label}</span>
-                    </div>
-                  );
-                })}
+                {growth.map((item, idx) => (
+                  <div key={idx} className="flex flex-col items-center flex-1">
+                    <div className="analytics-bar-value">{item.value}</div>
+                    <div
+                      className="analytics-bar rounded-t w-8"
+                      style={{
+                        height: ${(item.value / maxValue) * 120 + 10}px,
+                        minHeight: 10,
+                        transition: "height 0.3s"
+                      }}
+                      title={item.value}
+                    ></div>
+                    <span className="analytics-bar-label mt-2">{item.label}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         ) : (
-          <div className="text-blue-400 text-center py-10">No analytics data found.</div>
+          <div className="text-center py-10" style={{ color: purple }}>No analytics data found.</div>
         )}
       </div>
     </div>
   );
 }
 
-export default Analytics;
+export default Analytics;
