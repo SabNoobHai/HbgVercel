@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPages, setUser, setFbToken } from '../store/pagesSlice';
@@ -15,6 +15,9 @@ const SchPost = () => {
   const [scheduledTime, setScheduledTime] = useState('');
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaType, setMediaType] = useState('photo');
+  const [loading, setLoading] = useState(false);
+
+  const fileInputRef = useRef();
 
   // Get user_id from localStorage
   const userId = (() => {
@@ -79,16 +82,19 @@ const SchPost = () => {
     if (!scheduledTime) return alert('Select a scheduled time.');
 
     const timestamp = Math.floor(new Date(scheduledTime).getTime() / 1000);
+    if (isNaN(timestamp) || timestamp <= Math.floor(Date.now() / 1000)) {
+      return alert('Please select a valid future time for scheduling.');
+    }
+
     const formData = new FormData();
     formData.append('user_id', userId);
     formData.append('pageId', selectedPage);
     formData.append('message', message);
     formData.append('scheduledTime', timestamp);
-    // Add this
     formData.append('mediaType', mediaType);
-     console.log("MediaFile:", mediaFile);
     formData.append('file', mediaFile);
 
+    setLoading(true);
     try {
       const res = await axios.post('https://socialsuit-backend-h9md.onrender.com/schedulePost/timing', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -96,7 +102,14 @@ const SchPost = () => {
       alert('Scheduled Post ID: ' + res.data.postId);
       resetForm();
     } catch (err) {
-      alert('Failed to schedule post: ' + (err.response?.data?.error || err.message));
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        'Unknown error';
+      alert('Failed to schedule post: ' + errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -109,9 +122,9 @@ const SchPost = () => {
     formData.append('pageId', selectedPage);
     formData.append('message', message);
     formData.append('mediaType', mediaType);
-     console.log("MediaFile:", mediaFile);
     formData.append('file', mediaFile);
 
+    setLoading(true);
     try {
       const res = await axios.post('https://socialsuit-backend-h9md.onrender.com/schedulePost/instantly', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -119,16 +132,14 @@ const SchPost = () => {
       alert('Post ID: ' + res.data.postId);
       resetForm();
     } catch (err) {
-      console.error('Instant post error:', err);
-
-const errorMessage =
-  err.response?.data?.error ||
-  err.response?.data?.message ||
-  err.message ||
-  'Unknown error';
-
-alert('Failed to post instantly: ' + errorMessage);
-
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        'Unknown error';
+      alert('Failed to post instantly: ' + errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -137,6 +148,9 @@ alert('Failed to post instantly: ' + errorMessage);
     setScheduledTime('');
     setMediaFile(null);
     setMediaType('photo');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -195,6 +209,7 @@ alert('Failed to post instantly: ' + errorMessage);
 
             <label className="block mb-1 text-sm font-semibold text-blue-200">Upload Media</label>
             <input
+              ref={fileInputRef}
               type="file"
               accept={mediaType === 'photo' ? 'image/*' : 'video/*'}
               onChange={e => setMediaFile(e.target.files[0])}
@@ -212,17 +227,19 @@ alert('Failed to post instantly: ' + errorMessage);
             <div className="flex flex-col sm:flex-row gap-3 mt-2">
               <button
                 onClick={handleSchedulePost}
+                disabled={loading}
                 className="flex-1 bg-black text-blue-400 px-4 py-2 rounded-lg font-semibold shadow flex items-center justify-center gap-2 hover:bg-[#181c24] transition"
               >
                 <FaRegClock />
-                Schedule Later
+                {loading ? 'Scheduling...' : 'Schedule Later'}
               </button>
               <button
                 onClick={handlePostNow}
+                disabled={loading}
                 className="flex-1 bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow flex items-center justify-center gap-2 hover:bg-blue-800 transition"
               >
                 <FaPaperPlane />
-                Post Now
+                {loading ? 'Posting...' : 'Post Now'}
               </button>
             </div>
           </div>
