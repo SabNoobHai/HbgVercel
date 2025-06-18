@@ -119,7 +119,16 @@ const SchPost = () => {
       alert('Post ID: ' + res.data.postId);
       resetForm();
     } catch (err) {
-      alert('Failed to post instantly: ' + (err.response?.data?.error || err.message));
+      console.error('Instant post error:', err);
+
+const errorMessage =
+  err.response?.data?.error ||
+  err.response?.data?.message ||
+  err.message ||
+  'Unknown error';
+
+alert('Failed to post instantly: ' + errorMessage);
+
     }
   };
 
